@@ -64,6 +64,12 @@ directory, are ignored by Git.
   access; the map warns if a tile fails to load. Follow its
   [usage policy](https://wiki.openstreetmap.org/wiki/OpenRailwayMap/API):
   it is a volunteer service, not for bulk downloads or high-traffic use.
+- **Railway electrification** shows which rail lines are electrified via overhead
+  catenary or third rail. Color coding indicates electrification type and status.
+  Coverage varies by region; this layer is based on OpenStreetMap data.
+- **Railway gauge** displays track gauge information (standard, broad, narrow gauge).
+  Different colors represent different gauge widths. This helps identify
+  interoperability constraints across rail networks.
 - **Renfe trains** is an optional, initially disabled overlay. Enable it and
   pan to Spain for high-speed, long-distance and medium-distance positions
   from [Renfe's GTFS-Realtime feed](https://data.renfe.com/dataset/posicion-vehiculos-av-ld-md)

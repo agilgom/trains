@@ -52,8 +52,6 @@ m <- leaflet::leaflet(
 ) |>
   leaflet::addProviderTiles(leaflet::providers$Esri.WorldShadedRelief,
                             group = "Terrain") |>
-  leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron,
-                            group = "Light basemap") |>
   # A transparent placeholder is replaced with the image service after rendering.
   leaflet::addTiles(
     urlTemplate = paste0(
@@ -68,10 +66,31 @@ m <- leaflet::leaflet(
     attribution = rail_attribution, group = "Railway speeds",
     options = leaflet::tileOptions(maxNativeZoom = 19)
   ) |>
+  leaflet::addTiles(
+    urlTemplate = "https://tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png",
+    attribution = rail_attribution, group = "Railway standard",
+    options = leaflet::tileOptions(maxNativeZoom = 19)
+  ) |>
+  leaflet::addTiles(
+    urlTemplate = "https://tiles.openrailwaymap.org/signaling/{z}/{x}/{y}.png",
+    attribution = rail_attribution, group = "Railway signaling",
+    options = leaflet::tileOptions(maxNativeZoom = 19)
+  ) |>
+  leaflet::addTiles(
+    urlTemplate = "https://tiles.openrailwaymap.org/electrified/{z}/{x}/{y}.png",
+    attribution = rail_attribution, group = "Railway electrification",
+    options = leaflet::tileOptions(maxNativeZoom = 19)
+  ) |>
+  leaflet::addTiles(
+    urlTemplate = "https://tiles.openrailwaymap.org/gauge/{z}/{x}/{y}.png",
+    attribution = rail_attribution, group = "Railway gauge",
+    options = leaflet::tileOptions(maxNativeZoom = 19)
+  ) |>
   leaflet::setView(lng = -98, lat = 39, zoom = 4) |>
   leaflet::hideGroup(c("Light basemap", "Renfe trains"))
 
-overlays <- c("Population density", "Railway speeds", "Renfe trains")
+overlays <- c("Population density", "Railway speeds", "Railway standard", 
+             "Railway signaling", "Railway electrification", "Railway gauge", "Renfe trains")
 
 # A prepared GeoPackage is optional; the speed tiles work without one.
 rail_file <- "data/us_railways.gpkg"
