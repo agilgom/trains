@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Population, Terrain and Railway Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        .leaflet-control { background-color: white; padding: 8px; border-radius: 4px; }
+        .renfe-status { background: #fff !important; padding: 8px !important; max-width: 260px !important; }
+        .density-tile-error, .rail-tile-error { 
+            background: #fff !important; 
+            padding: 8px !important; 
+            max-width: 260px !important;
+        }
+        .info.legend {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        }
+        .info.legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+        .rail-speed-legend {
+            max-height: min(35vh, 260px) !important;
+            max-width: 220px !important;
+            overflow-y: auto !important;
+        }
+        .legend-toggle {
+            display: none;
+            max-height: 200px !important;
+            overflow-y: auto !important;
+        }
+        .legend-toggle.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        const map = L.map('map', {
+            preferCanvas: true,
+            minZoom: 2,
+            maxZoom: 19
+        }).setView([39, -98], 4);
+
+        // Base layers
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri',
+            noWrap: false
+        }).addTo(map);
+
+        // Population density - placeholder replaced by image service
+        const densityLayer = L.tileLayer('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', {
+            attribution: 'Population: <a href="https://www.worldpop.org/doi/10.5258/SOTON/WP00674">WorldPop</a> and Esri (2020)',
+            opacity: 0.65,
+            maxNativeZoom: 13
+        }).addTo(map);
+        densityLayer.group = 'Population density';
+
+        // Railway layers from OpenRailwayMap
+        const railAttribution = 'Data: <a href="https://www.openstreetmap.org/copyright">&copy; OpenStreetMap contributors</a>; Style: <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a> <a href="https://www.openrailwaymap.org/">OpenRailwayMap</a>';
+
+        // Create layer groups for control
+        const baseLayers = {};
+
+        const densityLayers = {
+            'Population density': densityLayer
+        };
+
+        const railwayLayers = {
+            'Railway speeds': L.tileLayer('https://tiles.openrailwaymap.org/maxspeed/{z}/{x}/{y}.png', {
+                attribution: railAttribution,
+                maxNativeZoom: 19
+            }),
+            'Railway standard': L.tileLayer('https://tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', {
+                attribution: railAttribution,
+                maxNativeZoom: 19
+            }),
+            'Railway signaling': L.tileLayer('https://tiles.openrailwaymap.org/signaling/{z}/{x}/{y}.png', {
+                attribution: railAttribution,
+                maxNativeZoom: 19
+            }),
+            'Railway electrification': L.tileLayer('https://tiles.openrailwaymap.org/electrified/{z}/{x}/{y}.png', {
+                attribution: railAttribution,
+                maxNativeZoom: 19
+            }),
+            'Railway gauge': L.tileLayer('https://tiles.openrailwaymap.org/gauge/{z}/{x}/{y}.png', {
+                attribution: railAttribution,
+                maxNativeZoom: 19
+            })
+        };
+
+        const overlayLayers = Object.assign({}, densityLayers, railwayLayers);
+
+        L.control.layers(baseLayers, overlayLayers, { collapsed: false, position: 'bottomleft' }).addTo(map);
+
+        // Create legend controls for each layer
+        const legends = {};
+
+        // Density legend
+        const densityColors = ['#ffffb2', '#fecc5c', '#fd8d3c', '#f03b20', '#bd0026'];
+        legends['Population density'] = L.control({ position: 'bottomright' });
+        legends['Population density'].onAdd = function() {
+            const div = L.DomUtil.create('div', 'info legend legend-toggle');
+            div.innerHTML = '<strong>People / km² (2020)<br/>&lt;1 transparent</strong><br/>';
+            const labels = ['1–10', '10–100', '100–1,000', '1,000–10,000', '10,000+'];
+            for (let i = 0; i < densityColors.length; i++) {
+                div.innerHTML += '<i style="background:' + densityColors[i] + '"></i> ' + labels[i] + '<br/>';
+            }
+            return div;
+        };
+        legends['Population density'].addTo(map);
+
+        // Rail speed legend
+        const railSpeedColors = ['gray', '#0100CB', '#001ECB', '#003DCB', '#005BCB', '#007ACB',
+            '#0098CB', '#00B7CB', '#00CBC1', '#00CBA2', '#00CB84', '#00CB66', '#00CB47', '#00CB29', '#00CB0A',
+            '#14CB00', '#33CB00', '#51CB00', '#70CB00', '#8ECB00', '#ADCB00', '#CBCB00', '#CBAD00', '#CB8E00',
+            '#CB7000', '#CB5100', '#CB3300', '#CB1400', '#CB0007', '#CB0025', '#CB0044', '#CB0062', '#CB0081',
+            '#CB009F', '#CB00BD', '#BA00CB'];
+        const speedLabels = ['No speed info', '≤ 10', '> 10–20', '> 20–30', '> 30–40', '> 40–50', '> 50–60', '> 60–70',
+            '> 70–80', '> 80–90', '> 90–100', '> 100–110', '> 110–120', '> 120–130', '> 130–140', '> 140–150',
+            '> 150–160', '> 160–170', '> 170–180', '> 180–190', '> 190–200', '> 200–210', '> 210–220', '> 220–230',
+            '> 230–240', '> 240–250', '> 250–260', '> 260–270', '> 270–280', '> 280–290', '> 290–300', '> 300–320',
+            '> 320–340', '> 340–360', '> 360–380', '> 380'];
+        
+        legends['Railway speeds'] = L.control({ position: 'bottomright' });
+        legends['Railway speeds'].onAdd = function() {
+            const div = L.DomUtil.create('div', 'info legend rail-speed-legend legend-toggle');
+            div.innerHTML = '<strong>Rail max speed (km/h)<br/><span style="font-size:10px">Scroll for all speeds</span></strong><br/>';
+            for (let i = 0; i < railSpeedColors.length; i++) {
+                div.innerHTML += '<i style="background:' + railSpeedColors[i] + '"></i> ' + speedLabels[i] + '<br/>';
+            }
+            return div;
+        };
+        legends['Railway speeds'].addTo(map);
+
+        // Railway standard legend
+        legends['Railway standard'] = L.control({ position: 'bottomright' });
+        legends['Railway standard'].onAdd = function() {
+            const div = L.DomUtil.create('div', 'info legend legend-toggle');
+            div.innerHTML = '<strong>Railway Standard<br/>&nbsp;</strong><br/>';
+            div.innerHTML += '<i style="border-top: 3px solid #000;"></i> Branch line<br/>';
+            div.innerHTML += '<i style="border-top: 3px solid #ff9900;"></i> Main line<br/>';
+            div.innerHTML += '<i style="border-top: 3px solid #cc0000;"></i> High-speed line<br/>';
+            return div;
+        };
+        legends['Railway standard'].addTo(map);
+
+        // Railway signaling legend
+        legends['Railway signaling'] = L.control({ position: 'bottomright' });
+        legends['Railway signaling'].onAdd = function() {
+            const div = L.DomUtil.create('div', 'info legend legend-toggle rail-speed-legend');
+            div.innerHTML = '<strong>Train Protection<br/><span style="font-size:10px">Scroll for all systems</span></strong><br/>';
+            div.innerHTML += '<i style="background: #ff00ff;"></i> PTC<br/>';
+            div.innerHTML += '<i style="background: #0000ff;"></i> ETCS<br/>';
+            div.innerHTML += '<i style="background: #ffff00;"></i> PZB<br/>';
+            div.innerHTML += '<i style="background: #ff9900;"></i> ATB<br/>';
+            div.innerHTML += '<i style="background: #8b4513;"></i> ZSI 127<br/>';
+            div.innerHTML += '<i style="background: #9900ff;"></i> ATC<br/>';
+            div.innerHTML += '<i style="background: #ff0000;"></i> LZB<br/>';
+            div.innerHTML += '<i style="background: #00cc00;"></i> KVB<br/>';
+            div.innerHTML += '<i style="background: #00cccc;"></i> TVM<br/>';
+            div.innerHTML += '<i style="background: #ff00cc;"></i> SCMT<br/>';
+            div.innerHTML += '<i style="background: #ffcccc;"></i> ASFA<br/>';
+            return div;
+        };
+        legends['Railway signaling'].addTo(map);
+
+        // Railway electrification legend
+        legends['Railway electrification'] = L.control({ position: 'bottomright' });
+        legends['Railway electrification'].onAdd = function() {
+            const div = L.DomUtil.create('div', 'info legend legend-toggle rail-speed-legend');
+            div.innerHTML = '<strong>Electrification<br/>&nbsp;</strong><br/>';
+            div.innerHTML += '<i style="border-top: 2px solid #999;"></i> No information<br/>';
+            div.innerHTML += '<i style="border-top: 2px solid #000;"></i> Not electrified<br/>';
+            div.innerHTML += '<i style="border-top: 2px solid #999;"></i> De-electrified<br/>';
+            div.innerHTML += '<i style="border-top: 2px dashed #ff0000;"></i> Electrification proposed<br/>';
+            div.innerHTML += '<i style="border-top: 2px dashed #ff0000;"></i> Under construction<br/>';
+            div.innerHTML += '<i style="border-top: 2px solid #ff0000;"></i> Overhead line<br/>';
+            div.innerHTML += '<i style="border-top: 2px solid #cc0000;"></i> 3rd rail<br/>';
+            div.innerHTML += '<strong style="font-size:12px; margin-top: 8px; display:block;">Voltage (AC ~)<br/></strong>';
+            div.innerHTML += '<i style="background: #ffcccc;"></i> &lt;750V<br/>';
+            div.innerHTML += '<i style="background: #ff99cc;"></i> 750V<br/>';
+            div.innerHTML += '<i style="background: #ff66ff;"></i> 750-1000V<br/>';
+            div.innerHTML += '<i style="background: #0000ff;"></i> 1kV<br/>';
+            div.innerHTML += '<i style="background: #00ccff;"></i> 1-1.5kV<br/>';
+            div.innerHTML += '<i style="background: #00ffff;"></i> 1.5kV<br/>';
+            div.innerHTML += '<i style="background: #00cccc;"></i> 1.5-3kV<br/>';
+            div.innerHTML += '<i style="background: #0066ff;"></i> 3kV<br/>';
+            div.innerHTML += '<i style="background: #0033ff;"></i> &gt;3kV<br/>';
+            div.innerHTML += '<i style="background: #ccff00;"></i> &lt;15kV~<br/>';
+            div.innerHTML += '<i style="background: #00ff00;"></i> 15kV 16⅔Hz<br/>';
+            div.innerHTML += '<i style="background: #00cc99;"></i> 15kV 16.7Hz<br/>';
+            div.innerHTML += '<i style="background: #ffff00;"></i> 15-25kV~<br/>';
+            div.innerHTML += '<i style="background: #ffcc00;"></i> ≥25kV~<br/>';
+            div.innerHTML += '<i style="background: #ff6600;"></i> 25kV 50Hz~<br/>';
+            div.innerHTML += '<i style="background: #ff3300;"></i> 25kV 60Hz~<br/>';
+            return div;
+        };
+        legends['Railway electrification'].addTo(map);
+
+        // Railway gauge legend
+        legends['Railway gauge'] = L.control({ position: 'bottomright' });
+        legends['Railway gauge'].onAdd = function() {
+            const div = L.DomUtil.create('div', 'info legend legend-toggle');
+            div.innerHTML = '<strong>Track Gauge<br/>&nbsp;</strong><br/>';
+            div.innerHTML += '<i style="border-top: 2px solid #999;"></i> No information<br/>';
+            div.innerHTML += '<i style="border-top: 2px solid #000;"></i> Standard gauge (1435mm)<br/>';
+            div.innerHTML += '<i style="border-top: 2px solid #ff66cc;"></i> Broad gauge (1676mm)<br/>';
+            div.innerHTML += '<i style="border-top: 2px solid #0000ff;"></i> Narrow gauge (1000mm)<br/>';
+            div.innerHTML += '<i style="border-top: 2px solid #000;"></i> Dual gauge<br/>';
+            div.innerHTML += '<i style="border-top: 2px dashed #999;"></i> Multiple gauge<br/>';
+            return div;
+        };
+        legends['Railway gauge'].addTo(map);
+
+        // Enforce mutually exclusive railway layers AND update legend visibility
+        map.on('overlayadd', function(e) {
+            // Mutual exclusivity for railway layers
+            if (railwayLayers[e.name]) {
+                Object.keys(railwayLayers).forEach(layerName => {
+                    if (layerName !== e.name && map.hasLayer(railwayLayers[layerName])) {
+                        map.removeLayer(railwayLayers[layerName]);
+                    }
+                });
+            }
+            // Update legend visibility
+            if (legends[e.name]) {
+                legends[e.name].getContainer().classList.add('active');
+            }
+        });
+
+        map.on('overlayremove', function(e) {
+            if (legends[e.name]) {
+                legends[e.name].getContainer().classList.remove('active');
+            }
+        });
+
+        // Population density image service
+        densityLayer.getTileUrl = function(coords) {
+            const half = 20037508.342789244;
+            const width = 2 * half / Math.pow(2, coords.z);
+            const left = -half + coords.x * width;
+            const top = half - coords.y * width;
+            
+            const rule = {
+                rasterFunction: 'Colormap',
+                rasterFunctionArguments: {
+                    Raster: {
+                        rasterFunction: 'Remap',
+                        rasterFunctionArguments: {
+                            Raster: '$$',
+                            InputRanges: [1, 10, 10, 100, 100, 1000, 1000, 10000, 10000, 10000000],
+                            OutputValues: [1, 2, 3, 4, 5],
+                            AllowUnmatched: false
+                        }
+                    },
+                    Colormap: [[1,255,255,178], [2,254,204,92], [3,253,141,60], [4,240,59,32], [5,189,0,38]]
+                }
+            };
+
+            const service = 'https://worldpop.arcgis.com/arcgis/rest/services/WorldPop_Population_Density_1km/ImageServer/exportImage';
+            const params = new URLSearchParams({
+                bbox: [left, top - width, left + width, top].join(','),
+                bboxSR: '3857',
+                imageSR: '3857',
+                size: '256,256',
+                format: 'png32',
+                transparent: 'true',
+                f: 'image',
+                time: '1577836800000',
+                interpolation: 'RSP_NearestNeighbor',
+                renderingRule: JSON.stringify(rule)
+            });
+
+            return service + '?' + params.toString();
+        };
+
+        const infoControl = L.control({ position: 'bottomleft' });
+        infoControl.onAdd = function() {
+            const div = L.DomUtil.create('div', 'info');
+            div.innerHTML = '<a href="https://www.worldpop.org/">WorldPop 2020</a>; ' +
+                '<a href="https://www.openrailwaymap.org/legend-generator.php?zoom=12&style=maxspeed&lang=en_GB">' +
+                'Railway speed legend (km/h)</a>. Railway tiles require an available external service.';
+            div.style.background = 'white';
+            div.style.padding = '8px';
+            div.style.borderRadius = '4px';
+            return div;
+        };
+        infoControl.addTo(map);
+
+        L.control.scale({ position: 'bottomleft' }).addTo(map);
+
+        // Hide railway legend by default (only show when active)
+        setTimeout(function() {
+            Object.keys(railwayLayers).forEach(layerName => {
+                if (legends[layerName]) {
+                    legends[layerName].getContainer().classList.remove('active');
+                }
+            });
+        }, 100);
+    </script>
+</body>
+</html>

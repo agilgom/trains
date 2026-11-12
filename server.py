@@ -16,7 +16,7 @@ FEED_URL = "https://gtfsrt.renfe.com/vehicle_positions_LD.json"
 FEED_PATH = "/api/renfe/vehicles"
 CACHE_SECONDS = 30
 MAX_FEED_BYTES = 5 * 1024 * 1024
-OUTPUT_DIR = Path(__file__).resolve().parent / "output"
+OUTPUT_DIR = Path(__file__).resolve().parent / "docs"
 _cache_lock = threading.Lock()
 _cache = {"body": None, "expires": 0.0}
 
@@ -63,7 +63,7 @@ class MapHandler(SimpleHTTPRequestHandler):
 
 def main():
     if not (OUTPUT_DIR / "us_geography_railways.html").is_file():
-        raise SystemExit("Generate the map first with Rscript script.R")
+        raise SystemExit("Generate the map first with python3 generate_map.py")
     server = ThreadingHTTPServer(
         ("127.0.0.1", 8000), partial(MapHandler, directory=str(OUTPUT_DIR))
     )

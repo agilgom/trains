@@ -4,7 +4,7 @@
 import json
 from pathlib import Path
 
-OUTPUT_DIR = Path(__file__).resolve().parent / "output"
+OUTPUT_DIR = Path(__file__).resolve().parent / "docs"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 html_content = """<!DOCTYPE html>
