@@ -62,7 +62,7 @@ html_content = """<!DOCTYPE html>
             maxZoom: 19
         }).setView([39, -98], 4);
 
-        // Base layers
+        // Base layer - Black and white shaded relief
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri',
             noWrap: false
@@ -76,6 +76,13 @@ html_content = """<!DOCTYPE html>
         }).addTo(map);
         densityLayer.group = 'Population density';
 
+        // Elevation tinted hillshade (toggle layer)
+        const elevationLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap',
+            maxZoom: 17,
+            noWrap: false
+        });
+
         // Railway layers from OpenRailwayMap
         const railAttribution = 'Data: <a href="https://www.openstreetmap.org/copyright">&copy; OpenStreetMap contributors</a>; Style: <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a> <a href="https://www.openrailwaymap.org/">OpenRailwayMap</a>';
 
@@ -84,6 +91,10 @@ html_content = """<!DOCTYPE html>
 
         const densityLayers = {
             'Population density': densityLayer
+        };
+
+        const terrainLayers = {
+            'Elevation (OpenTopoMap)': elevationLayer
         };
 
         const railwayLayers = {
@@ -105,7 +116,7 @@ html_content = """<!DOCTYPE html>
             })
         };
 
-        const overlayLayers = Object.assign({}, densityLayers, railwayLayers);
+        const overlayLayers = Object.assign({}, terrainLayers, densityLayers, railwayLayers);
 
         L.control.layers(baseLayers, overlayLayers, { collapsed: false, position: 'bottomleft' }).addTo(map);
 
@@ -125,6 +136,16 @@ html_content = """<!DOCTYPE html>
             return div;
         };
         legends['Population density'].addTo(map);
+
+        // Elevation legend
+        legends['Elevation (OpenTopoMap)'] = L.control({ position: 'bottomright' });
+        legends['Elevation (OpenTopoMap)'].onAdd = function() {
+            const div = L.DomUtil.create('div', 'info legend legend-toggle');
+            div.innerHTML = '<strong>Elevation Tinted<br/>Hillshade</strong><br/>';
+            div.innerHTML += '<i style="background: linear-gradient(to bottom, #8B4513, #228B22, #90EE90, #FFD700, #CD853F);"></i> OpenTopoMap<br/>';
+            return div;
+        };
+        legends['Elevation (OpenTopoMap)'].addTo(map);
 
         // Rail speed legend
         const railSpeedColors = ['gray', '#0100CB', '#001ECB', '#003DCB', '#005BCB', '#007ACB',
@@ -287,13 +308,16 @@ html_content = """<!DOCTYPE html>
 
         L.control.scale({ position: 'bottomleft' }).addTo(map);
 
-        // Hide railway legend by default (only show when active)
+        // Hide railway and elevation legends by default (only show when active)
         setTimeout(function() {
             Object.keys(railwayLayers).forEach(layerName => {
                 if (legends[layerName]) {
                     legends[layerName].getContainer().classList.remove('active');
                 }
             });
+            if (legends['Elevation (OpenTopoMap)']) {
+                legends['Elevation (OpenTopoMap)'].getContainer().classList.remove('active');
+            }
         }, 100);
     </script>
 </body>
