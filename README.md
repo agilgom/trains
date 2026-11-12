@@ -15,6 +15,24 @@ The basemaps, population
 and railway layers require an internet connection. OpenRailwayMap requires a browser
 referer, so its tiles may not work when opening the HTML file directly.
 
+## Publish on GitHub Pages
+
+Running `Rscript script.R` also generates `docs/index.html` and the accompanying
+`docs/index_files/` directory. Commit both along with the source files. In the
+repository's **Settings → Pages**, choose **Deploy from a branch**, select
+`main` and `/docs`, and save. Once published, the map is available at
+`https://agilgom.github.io/trains/`.
+
+GitHub Pages hosts static files only: **Renfe trains will not work there**
+without a separately hosted HTTPS backend and a corresponding change to the
+map's feed URL. The local `server.py` is not deployed by Pages. The other
+layers still depend on their external tile and image services.
+
+The generated site includes any optional local railway data read by the
+script. Review that data and its license before committing or publishing it.
+The downloaded raster and local GeoPackage in `data/`, and the local `output/`
+directory, are ignored by Git.
+
 ## Layers and limitations
 
 - **Terrain** is Esri's shaded-relief basemap; the light basemap is an
