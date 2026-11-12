@@ -95,10 +95,6 @@ html_content = """<!DOCTYPE html>
                 attribution: railAttribution,
                 maxNativeZoom: 19
             }),
-            'Railway signaling': L.tileLayer('https://tiles.openrailwaymap.org/signals/{z}/{x}/{y}.png', {
-                attribution: railAttribution,
-                maxNativeZoom: 19
-            }),
             'Railway electrification': L.tileLayer('https://tiles.openrailwaymap.org/electrified/{z}/{x}/{y}.png', {
                 attribution: railAttribution,
                 maxNativeZoom: 19
@@ -166,25 +162,6 @@ html_content = """<!DOCTYPE html>
         legends['Railway standard'].addTo(map);
 
         // Railway signaling legend
-        legends['Railway signaling'] = L.control({ position: 'bottomright' });
-        legends['Railway signaling'].onAdd = function() {
-            const div = L.DomUtil.create('div', 'info legend legend-toggle rail-speed-legend');
-            div.innerHTML = '<strong>Train Protection<br/><span style="font-size:10px">Scroll for all systems</span></strong><br/>';
-            div.innerHTML += '<i style="background: #ff00ff;"></i> PTC<br/>';
-            div.innerHTML += '<i style="background: #0000ff;"></i> ETCS<br/>';
-            div.innerHTML += '<i style="background: #ffff00;"></i> PZB<br/>';
-            div.innerHTML += '<i style="background: #ff9900;"></i> ATB<br/>';
-            div.innerHTML += '<i style="background: #8b4513;"></i> ZSI 127<br/>';
-            div.innerHTML += '<i style="background: #9900ff;"></i> ATC<br/>';
-            div.innerHTML += '<i style="background: #ff0000;"></i> LZB<br/>';
-            div.innerHTML += '<i style="background: #00cc00;"></i> KVB<br/>';
-            div.innerHTML += '<i style="background: #00cccc;"></i> TVM<br/>';
-            div.innerHTML += '<i style="background: #ff00cc;"></i> SCMT<br/>';
-            div.innerHTML += '<i style="background: #ffcccc;"></i> ASFA<br/>';
-            return div;
-        };
-        legends['Railway signaling'].addTo(map);
-
         // Railway electrification legend
         legends['Railway electrification'] = L.control({ position: 'bottomright' });
         legends['Railway electrification'].onAdd = function() {
@@ -323,7 +300,7 @@ html_content = """<!DOCTYPE html>
 </html>
 """
 
-output_file = OUTPUT_DIR / "us_geography_railways.html"
+output_file = OUTPUT_DIR / "geography_railways.html"
 output_file.write_text(html_content)
 print(f"Map created: {output_file}")
 print("Open with: python3 server.py")
