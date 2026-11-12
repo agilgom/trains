@@ -95,7 +95,7 @@ html_content = """<!DOCTYPE html>
                 attribution: railAttribution,
                 maxNativeZoom: 19
             }),
-            'Railway signaling': L.tileLayer('https://tiles.openrailwaymap.org/signaling/{z}/{x}/{y}.png', {
+            'Railway signaling': L.tileLayer('https://tiles.openrailwaymap.org/signals/{z}/{x}/{y}.png', {
                 attribution: railAttribution,
                 maxNativeZoom: 19
             }),
